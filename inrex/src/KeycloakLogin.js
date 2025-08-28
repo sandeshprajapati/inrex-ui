@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import ReactDOM from "react-dom/client";
 import App from "./App";
 import keycloak from "./keycloak";
 import "./styles/KeycloakLogin.css";
@@ -113,11 +112,9 @@ function KeycloakLogin() {
     );
   }
 
-  // Authenticated state - render the main app
+  // Authenticated state - render the main app as a child
   if (isAuthenticated) {
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App keycloak={keycloak} />);
-    return null;
+    return <App keycloak={keycloak} />;
   }
 
   return null;

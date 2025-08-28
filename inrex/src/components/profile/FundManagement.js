@@ -8,6 +8,7 @@ function FundManagement({ fundData }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     // Handle fund transaction logic here
     console.log("Transaction:", { type: transactionType, amount });
   };
@@ -121,7 +122,6 @@ function FundManagement({ fundData }) {
                   Amount
                 </label>
                 <div className="input-group">
-                  <span className="input-group-text">INR</span>
                   <input
                     type="number"
                     className="form-control"
@@ -134,7 +134,11 @@ function FundManagement({ fundData }) {
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary w-100">
+              <button
+                type="submit"
+                className="btn btn-primary w-100"
+                onClick={handleSubmit}
+              >
                 {transactionType === "deposit" ? "Add Funds" : "Withdraw Funds"}
               </button>
             </form>
