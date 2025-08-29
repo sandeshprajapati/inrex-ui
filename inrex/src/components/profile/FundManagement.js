@@ -1,16 +1,66 @@
 import React, { useState } from "react";
-
+import fundService from "../../services/fundService";
 import { formatCurrency } from "../../utils/format";
 
-function FundManagement({ fundData }) {
+function FundManagement({ fundData, onFundUpdate }) {
   const [amount, setAmount] = useState("");
   const [transactionType, setTransactionType] = useState("deposit");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Handle fund transaction logic here
-    console.log("Transaction:", { type: transactionType, amount });
+    if (!amount || amount <= 0) {
+      setMessage({ type: "error", text: "Please enter a valid amount" });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const fundData = {
+        amount: parseFloat(amount),
+        userId: localStorage.getItem("userId") || "user123", // Get from auth context
+        description: `${transactionType} via cash payment`,
+      };
+
+      let result;
+      if (transactionType === "deposit") {
+        result = await fundService.addFunds(fundData);
+        setMessage({
+          type: "success",
+          text: `Successfully added ${formatCurrency(amount)} to your account`,
+        });
+      } else {
+        result = await fundService.withdrawFunds(fundData);
+        setMessage({
+          type: "success",
+          text: `Successfully withdrawn ${formatCurrency(
+            amount
+          )} from your account`,
+        });
+      }
+
+      // Clear form
+      setAmount("");
+
+      // Notify parent component to refresh data
+      if (onFundUpdate) {
+        onFundUpdate(result);
+      }
+
+      console.log("Transaction successful:", result);
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      setMessage({
+        type: "error",
+        text: error.message || "Transaction failed. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -87,6 +137,24 @@ function FundManagement({ fundData }) {
             <h5 className="card-title mb-0">Add/Withdraw Funds</h5>
           </div>
           <div className="card-body">
+            {/* Message Display */}
+            {message.text && (
+              <div
+                className={`alert ${
+                  message.type === "success" ? "alert-success" : "alert-danger"
+                } alert-dismissible fade show`}
+                role="alert"
+              >
+                {message.text}
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setMessage({ type: "", text: "" })}
+                  aria-label="Close"
+                ></button>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <div className="btn-group w-100">
@@ -122,6 +190,7 @@ function FundManagement({ fundData }) {
                   Amount
                 </label>
                 <div className="input-group">
+                  <span className="input-group-text">₹</span>
                   <input
                     type="number"
                     className="form-control"
@@ -129,17 +198,58 @@ function FundManagement({ fundData }) {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Enter amount"
+                    min="1"
+                    step="0.01"
                     required
+                    disabled={loading}
                   />
+                </div>
+              </div>
+
+              {/* Payment Type Indicator */}
+              <div className="mb-3">
+                <label className="form-label">Payment Type</label>
+                <div className="d-flex align-items-center">
+                  <span className="badge bg-success-subtle text-success fs-6 px-3 py-2">
+                    <i className="bi bi-cash me-2"></i>
+                    Cash Payment
+                  </span>
+                  <small className="text-muted ms-2">
+                    All transactions are processed as cash payments
+                  </small>
                 </div>
               </div>
 
               <button
                 type="submit"
                 className="btn btn-primary w-100"
+                disabled={loading}
                 onClick={handleSubmit}
               >
-                {transactionType === "deposit" ? "Add Funds" : "Withdraw Funds"}
+                {loading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {transactionType === "deposit" ? (
+                      <>
+                        <i className="bi bi-plus-circle me-2"></i>
+                        Add Funds
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-dash-circle me-2"></i>
+                        Withdraw Funds
+                      </>
+                    )}
+                  </>
+                )}
               </button>
             </form>
           </div>
